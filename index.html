@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Agende a consulta do seu pet · Dra. Stephany Rodrigues</title>
+<link rel="stylesheet" href="front.css">
+</head>
+<body>
+<div class="page">
+  <aside class="side">
+    <div class="top">
+      <div class="brand"><span class="mark" aria-hidden="true">🐾</span>Dra. Stephany Rodrigues</div>
+      <a href="agenda.html">Área da equipe</a>
+    </div>
+    <div class="hero">
+      <h1>Cuidado de verdade para quem faz parte da família</h1>
+      <p>Escolha o melhor dia e horário para o seu pet. Você recebe a confirmação do agendamento logo em seguida.</p>
+    </div>
+    <ul class="perks">
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Atendimento individual, sem pressa</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Comprovante na hora, para guardar ou imprimir</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Vacinação, check-up e consultas clínicas</li>
+    </ul>
+  </aside>
+
+  <main class="main">
+    <div class="stack">
+      <form class="card" id="formAgendamento" novalidate>
+        <h2>Agende a consulta do seu pet</h2>
+        <p class="sub">Leva menos de um minuto.</p>
+        <div id="msgArea"></div>
+        <div class="grid">
+          <div class="field full">
+            <label for="nomeAnimal">Nome do animal</label>
+            <input type="text" id="nomeAnimal" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label for="especie">Espécie</label>
+            <select id="especie" required>
+              <option>Cão</option><option>Gato</option><option>Ave</option>
+              <option>Roedor</option><option>Réptil</option><option>Outro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="nomeTutor">Seu nome (tutor)</label>
+            <input type="text" id="nomeTutor" autocomplete="name" required>
+          </div>
+          <div class="field full">
+            <label for="telefone">Telefone para contato</label>
+            <input type="tel" id="telefone" inputmode="tel" autocomplete="tel" placeholder="(99) 99999-9999" required>
+          </div>
+          <div class="field">
+            <label for="data">Data</label>
+            <input type="date" id="data" required>
+          </div>
+          <div class="field">
+            <label for="horario">Horário</label>
+            <input type="time" id="horario" required min="08:00" max="18:00">
+          </div>
+          <div class="field full">
+            <label for="motivo">Motivo da consulta</label>
+            <textarea id="motivo" rows="3" placeholder="Ex.: vacinação, check-up ou sintomas que você notou"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn" id="btnEnviar">Confirmar agendamento</button>
+        </div>
+        <p class="note">Atendimento das 08:00 às 18:00.</p>
+      </form>
+
+      <div class="card" id="comprovante" style="display:none;">
+        <div id="comprovanteConteudo"></div>
+        <div class="actions no-print">
+          <button class="btn" onclick="window.print()">Imprimir ou salvar em PDF</button>
+          <button class="btn secondary" onclick="novoAgendamento()">Agendar outra consulta</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" title="envio"></iframe>
+<form id="formOculto" method="POST" target="hidden_iframe" style="display:none;"></form>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+const dataInput = document.getElementById("data");
+const telInput = document.getElementById("telefone");
+const horaInput = document.getElementById("horario");
+const msgArea = document.getElementById("msgArea");
+
+// Não permite datas passadas
+(function () {
+  const h = new Date();
+  const iso = h.getFullYear() + "-" + String(h.getMonth() + 1).padStart(2, "0") + "-" + String(h.getDate()).padStart(2, "0");
+  dataInput.min = iso;
+})();
+horaInput.min = HORARIO_ABERTURA;
+horaInput.max = HORARIO_FECHAMENTO;
+
+telInput.addEventListener("input", () => { telInput.value = mascararTelefone(telInput.value); });
+
+function validar() {
+  let primeiroErro = null;
+  let texto = "";
+  document.querySelectorAll("#formAgendamento [required]").forEach((el) => {
+    let invalido = !el.value.trim();
+    if (el === telInput && telInput.value.replace(/\D/g, "").length < 10) invalido = true;
+    if (el === horaInput && el.value && (el.value < HORARIO_ABERTURA || el.value > HORARIO_FECHAMENTO)) {
+      invalido = true;
+      texto = "Escolha um horário entre " + HORARIO_ABERTURA + " e " + HORARIO_FECHAMENTO + ".";
+    }
+    el.setAttribute("aria-invalid", invalido ? "true" : "false");
+    if (invalido && !primeiroErro) primeiroErro = el;
+  });
+  if (primeiroErro) {
+    msgArea.innerHTML = '<div class="msg err" role="alert">' + (texto || "Preencha os campos destacados para continuar.") + "</div>";
+    primeiroErro.focus();
+    return false;
+  }
+  msgArea.innerHTML = "";
+  return true;
+}
+
+document.getElementById("formAgendamento").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!validar()) return;
+  const btn = document.getElementById("btnEnviar");
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+
+  const dados = {
+    nomeAnimal: document.getElementById("nomeAnimal").value.trim(),
+    especie: document.getElementById("especie").value,
+    nomeTutor: document.getElementById("nomeTutor").value.trim(),
+    telefone: telInput.value.trim(),
+    data: dataInput.value,
+    horario: horaInput.value,
+    motivo: document.getElementById("motivo").value.trim()
+  };
+
+  try {
+    const resultado = await enviarParaGoogleForm(dados);
+    if (resultado.ok) {
+      mostrarComprovante(resultado.registro);
+      e.target.reset();
+      return;
+    }
+    throw new Error("Envio não concluído");
+  } catch (erro) {
+    console.error("Falha ao agendar:", erro);
+    msgArea.innerHTML = '<div class="msg err" role="alert">Não foi possível enviar o agendamento agora. Tente novamente em instantes.</div>';
+    btn.disabled = false;
+    btn.textContent = "Confirmar agendamento";
+  }
+});
+
+function linha(rotulo, valor) {
+  return "<tr><td>" + rotulo + "</td><td>" + escaparHtml(valor) + "</td></tr>";
+}
+
+function mostrarComprovante(r) {
+  const agora = new Date();
+  const emitidoEm = agora.toLocaleDateString("pt-BR") + " às " + agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  document.getElementById("comprovanteConteudo").innerHTML =
+    '<div class="ok-head" role="status"><div class="tick"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
+    "<h2>Agendamento confirmado</h2>" +
+    '<p class="hint">Guarde este comprovante e apresente-o na recepção, se precisar.</p></div>' +
+    '<table class="receipt">' +
+    linha("Protocolo", codigoProtocolo(r.id)) +
+    linha("Animal", r.nome_animal + " (" + r.especie + ")") +
+    linha("Tutor(a)", r.nome_tutor) +
+    linha("Telefone", r.telefone) +
+    linha("Data", formatarData(r.data_consulta)) +
+    linha("Horário", r.horario.slice(0, 5)) +
+    (r.motivo ? linha("Motivo", r.motivo) : "") +
+    linha("Profissional", "Dra. Stephany Rodrigues") +
+    "</table>" +
+    '<p class="hint" style="margin:14px 0 0;">Emitido em ' + emitidoEm + "</p>";
+
+  document.getElementById("formAgendamento").style.display = "none";
+  document.getElementById("comprovante").style.display = "block";
+  document.getElementById("comprovante").scrollIntoView({ behavior: "smooth" });
+}
+
+function novoAgendamento() {
+  document.getElementById("comprovante").style.display = "none";
+  document.getElementById("formAgendamento").style.display = "block";
+  document.getElementById("btnEnviar").disabled = false;
+  document.getElementById("btnEnviar").textContent = "Confirmar agendamento";
+  msgArea.innerHTML = "";
+}
+</script>
+</body>
+</html>

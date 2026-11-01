@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Área da equipe · Dra. Stephany Rodrigues</title>
+<link rel="stylesheet" href="front.css">
+</head>
+<body>
+<div class="page">
+  <aside class="side">
+    <div class="top">
+      <div class="brand"><span class="mark" aria-hidden="true">🐾</span>Dra. Stephany Rodrigues</div>
+      <a href="index.html">Página de agendamento</a>
+    </div>
+    <div class="hero">
+      <h1>Agenda de consultas</h1>
+      <p>Os agendamentos feitos pelos tutores caem automaticamente na Planilha Google da clínica.</p>
+    </div>
+    <ul class="perks">
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Funciona em qualquer computador ou celular</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Basta entrar com a sua conta Google</li>
+    </ul>
+  </aside>
+
+  <main class="main">
+    <div class="stack">
+      <div class="card gate" id="gateScreen">
+        <h2>Área da equipe</h2>
+        <p class="sub">Digite a senha para ver a agenda de consultas.</p>
+        <div class="field">
+          <label for="senhaInput">Senha</label>
+          <input type="password" id="senhaInput" autocomplete="current-password">
+        </div>
+        <div id="gateMsg" role="alert"></div>
+        <div class="actions"><button class="btn" id="btnEntrar">Entrar</button></div>
+      </div>
+
+      <div class="card" id="agendaScreen" style="display:none;">
+        <h2>Agenda de consultas</h2>
+        <p class="sub">Abra a planilha para ver os próximos atendimentos.</p>
+        <div class="actions">
+          <a id="linkPlanilha" class="btn" href="#" target="_blank" rel="noopener">Abrir planilha de agendamentos</a>
+        </div>
+        <p class="note">Dica: na planilha, use Dados → Criar filtro para ordenar por data.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script>
+document.getElementById("btnEntrar").addEventListener("click", tentarEntrar);
+document.getElementById("senhaInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") tentarEntrar();
+});
+
+function tentarEntrar() {
+  const valor = document.getElementById("senhaInput").value;
+  if (valor === SENHA_AGENDA) {
+    document.getElementById("gateScreen").style.display = "none";
+    document.getElementById("agendaScreen").style.display = "block";
+    document.getElementById("linkPlanilha").href = GOOGLE_SHEET_URL;
+  } else {
+    document.getElementById("gateMsg").innerHTML = '<div class="msg err">Senha incorreta.</div>';
+  }
+}
+</script>
+</body>
+</html>
